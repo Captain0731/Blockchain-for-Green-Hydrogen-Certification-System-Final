@@ -24,7 +24,7 @@ def handle_connect():
         print(f"User {current_user.username} connected to WebSocket")
 
 @socketio.on('disconnect')
-def handle_disconnect():
+def handle_disconnect(sid):
     """Handle client disconnection"""
     if current_user.is_authenticated:
         leave_room(f'user_{current_user.id}')

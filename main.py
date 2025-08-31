@@ -7,4 +7,4 @@ if __name__ == '__main__':
         BlockchainSimulator.initialize_genesis_block()
     
     # Start the application with SocketIO
-    socketio.run(app, host='0.0.0.0', port=5000, debug=True, use_reloader=False, log_output=True)
+    socketio.run(app, host='0.0.0.0', port=5000, debug=True, use_reloader=False, log_output=False)

@@ -39,8 +39,10 @@ login_manager.login_view = 'login'
 login_manager.login_message = 'Please log in to access this page.'
 login_manager.login_message_category = 'info'
 
-# Initialize SocketIO
-socketio = SocketIO(app, cors_allowed_origins="*", logger=True, engineio_logger=True)
+# Initialize SocketIO (simplified configuration)
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading', 
+                   logger=False, engineio_logger=False, 
+                   ping_timeout=60, ping_interval=25)
 
 @login_manager.user_loader
 def load_user(user_id):
