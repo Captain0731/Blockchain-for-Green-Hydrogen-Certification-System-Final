@@ -1,0 +1,223 @@
+{% extends "base.html" %}
+
+{% block title %}Certificates - Green Hydrogen Platform{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2><i class="fas fa-certificate me-2"></i>Hydrogen Certificates</h2>
+        <p class="text-muted">Issue and manage your green hydrogen production certificates</p>
+    </div>
+</div>
+
+<!-- Issue New Certificate -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-plus me-2"></i>Issue New Certificate</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <label for="hydrogen_amount" class="form-label">Hydrogen Amount (kg)</label>
+                                <input type="number" class="form-control" id="hydrogen_amount" name="hydrogen_amount" 
+                                       step="0.01" min="0.01" required>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <label for="production_method" class="form-label">Production Method</label>
+                                <select class="form-select" id="production_method" name="production_method" required>
+                                    <option value="">Select method</option>
+                                    <option value="electrolysis_renewable">Electrolysis (Renewable)</option>
+                                    <option value="biomass_gasification">Biomass Gasification</option>
+                                    <option value="steam_reforming_ccs">Steam Reforming + CCS</option>
+                                    <option value="steam_reforming">Steam Reforming</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <label for="location" class="form-label">Production Location</label>
+                                <input type="text" class="form-control" id="location" name="location" 
+                                       placeholder="e.g., California, USA" required>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <label class="form-label">&nbsp;</label>
+                                <button type="submit" class="btn btn-success d-block w-100">
+                                    <i class="fas fa-certificate me-2"></i>Issue Certificate
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <form method="GET" class="row g-3">
+                    <div class="col-md-3">
+                        <label for="search" class="form-label">Search Certificate ID</label>
+                        <input type="text" class="form-control" id="search" name="search" 
+                               value="{{ search }}" placeholder="HC-...">
+                    </div>
+                    
+                    <div class="col-md-3">
+                        <label for="status" class="form-label">Status</label>
+                        <select class="form-select" id="status" name="status">
+                            <option value="">All Status</option>
+                            <option value="issued" {{ 'selected' if status_filter == 'issued' }}>Issued</option>
+                            <option value="active" {{ 'selected' if status_filter == 'active' }}>Active</option>
+                        </select>
+                    </div>
+                    
+                    <div class="col-md-3">
+                        <label for="verification" class="form-label">Verification</label>
+                        <select class="form-select" id="verification" name="verification">
+                            <option value="">All Verification</option>
+                            <option value="pending" {{ 'selected' if verification_filter == 'pending' }}>Pending</option>
+                            <option value="verified" {{ 'selected' if verification_filter == 'verified' }}>Verified</option>
+                            <option value="rejected" {{ 'selected' if verification_filter == 'rejected' }}>Rejected</option>
+                        </select>
+                    </div>
+                    
+                    <div class="col-md-3">
+                        <label class="form-label">&nbsp;</label>
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary flex-fill">
+                                <i class="fas fa-search me-1"></i>Filter
+                            </button>
+                            <a href="{{ url_for('certificates') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-times"></i>
+                            </a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Certificates List -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5><i class="fas fa-list me-2"></i>Your Certificates</h5>
+                <a href="{{ url_for('export_certificates') }}" class="btn btn-outline-primary btn-sm">
+                    <i class="fas fa-download me-1"></i>Export
+                </a>
+            </div>
+            <div class="card-body">
+                {% if certificates %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Certificate ID</th>
+                                    <th>Hydrogen Amount</th>
+                                    <th>Production Method</th>
+                                    <th>Location</th>
+                                    <th>Issue Date</th>
+                                    <th>Status</th>
+                                    <th>Verification</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for cert in certificates %}
+                                {% set meta = cert.get_meta() %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ cert.certificate_id }}</strong>
+                                        {% if cert.smart_contract_address %}
+                                        <br><small class="text-muted">Contract: {{ cert.smart_contract_address[:10] }}...</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ "%.2f"|format(meta.hydrogen_amount_kg) }} kg</td>
+                                    <td>
+                                        {{ meta.production_method.replace('_', ' ').title() }}
+                                        <br><small class="text-muted">CI: {{ "%.1f"|format(meta.carbon_intensity) }} kg CO₂/kg H₂</small>
+                                    </td>
+                                    <td>{{ meta.location }}</td>
+                                    <td>{{ cert.issue_date.strftime('%Y-%m-%d %H:%M') }}</td>
+                                    <td>
+                                        <span class="badge bg-{{ 'success' if cert.status == 'active' else 'primary' }}">
+                                            {{ cert.status.title() }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if cert.verification_status == 'verified' %}
+                                            <span class="badge bg-success">
+                                                <i class="fas fa-check me-1"></i>Verified
+                                            </span>
+                                        {% elif cert.verification_status == 'rejected' %}
+                                            <span class="badge bg-danger">
+                                                <i class="fas fa-times me-1"></i>Rejected
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-warning">
+                                                <i class="fas fa-clock me-1"></i>Pending
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-certificate fa-3x text-muted mb-3"></i>
+                        <h5>No certificates found</h5>
+                        <p class="text-muted">Issue your first hydrogen certificate to get started</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Production method info
+document.getElementById('production_method').addEventListener('change', function() {
+    const method = this.value;
+    const helpText = document.getElementById('method-help');
+    
+    const methodInfo = {
+        'electrolysis_renewable': 'Green hydrogen from renewable energy electrolysis (0.0 kg CO₂/kg H₂)',
+        'biomass_gasification': 'Hydrogen from biomass gasification (1.0 kg CO₂/kg H₂)',
+        'steam_reforming_ccs': 'Steam reforming with carbon capture (2.5 kg CO₂/kg H₂)',
+        'steam_reforming': 'Traditional steam reforming (10+ kg CO₂/kg H₂)'
+    };
+    
+    if (helpText) {
+        helpText.textContent = methodInfo[method] || '';
+    }
+});
+
+// Add method help text element if not exists
+if (!document.getElementById('method-help')) {
+    const methodSelect = document.getElementById('production_method');
+    const helpText = document.createElement('div');
+    helpText.id = 'method-help';
+    helpText.className = 'form-text';
+    methodSelect.parentNode.appendChild(helpText);
+}
+</script>
+{% endblock %}

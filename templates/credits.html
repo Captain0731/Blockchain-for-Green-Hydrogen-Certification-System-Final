@@ -1,0 +1,211 @@
+{% extends "base.html" %}
+
+{% block title %}Carbon Credits - Green Hydrogen Platform{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2><i class="fas fa-coins me-2"></i>Carbon Credits</h2>
+        <p class="text-muted">Manage your carbon credits and transfer to other users</p>
+    </div>
+</div>
+
+<!-- Credit Balance Card -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card bg-primary text-white">
+            <div class="card-body text-center">
+                <i class="fas fa-coins fa-3x mb-3"></i>
+                <h2>{{ "%.2f"|format(total_credits) }}</h2>
+                <h5>Total Credits</h5>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-info-circle me-2"></i>Credit Information</h5>
+            </div>
+            <div class="card-body">
+                <p><strong>1 Credit =</strong> 1 ton CO₂ equivalent</p>
+                <p><strong>Welcome Bonus:</strong> 100 credits</p>
+                <p><strong>Earning Methods:</strong></p>
+                <ul class="mb-0">
+                    <li>Green hydrogen production</li>
+                    <li>Certificate verification</li>
+                    <li>Marketplace trading</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Actions -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-plus me-2"></i>Add Credits</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <input type="hidden" name="action" value="add">
+                    <div class="mb-3">
+                        <label for="amount" class="form-label">Amount</label>
+                        <input type="number" class="form-control" id="amount" name="amount" 
+                               step="0.01" min="0.01" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="source" class="form-label">Source</label>
+                        <select class="form-select" id="source" name="source" required>
+                            <option value="">Select source</option>
+                            <option value="hydrogen_production">Hydrogen Production</option>
+                            <option value="carbon_offset">Carbon Offset Project</option>
+                            <option value="renewable_energy">Renewable Energy</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-success w-100">
+                        <i class="fas fa-plus me-2"></i>Add Credits
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-exchange-alt me-2"></i>Transfer Credits</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <input type="hidden" name="action" value="transfer">
+                    <div class="mb-3">
+                        <label for="recipient" class="form-label">Recipient Username</label>
+                        <input type="text" class="form-control" id="recipient" name="recipient" 
+                               placeholder="Enter username" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="transfer_amount" class="form-label">Amount</label>
+                        <input type="number" class="form-control" id="transfer_amount" name="amount" 
+                               step="0.01" min="0.01" max="{{ total_credits }}" required>
+                        <div class="form-text">Available: {{ "%.2f"|format(total_credits) }} credits</div>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100" 
+                            {{ 'disabled' if total_credits <= 0 else '' }}>
+                        <i class="fas fa-paper-plane me-2"></i>Transfer Credits
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Transaction History -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5><i class="fas fa-history me-2"></i>Transaction History</h5>
+                <a href="{{ url_for('export_credits') }}" class="btn btn-outline-primary btn-sm">
+                    <i class="fas fa-download me-1"></i>Export
+                </a>
+            </div>
+            <div class="card-body">
+                {% if credits %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Type</th>
+                                    <th>Amount</th>
+                                    <th>Description</th>
+                                    <th>Balance Change</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for credit in credits %}
+                                {% set meta = credit.get_meta() %}
+                                <tr>
+                                    <td>{{ credit.date.strftime('%Y-%m-%d %H:%M') }}</td>
+                                    <td>
+                                        <span class="badge bg-{{ 'success' if credit.transaction_type in ['add', 'transfer_in'] else 'danger' }}">
+                                            {{ credit.transaction_type.replace('_', ' ').title() }}
+                                        </span>
+                                    </td>
+                                    <td>{{ "%.2f"|format(credit.amount) }}</td>
+                                    <td>
+                                        {{ meta.description if meta.description else 'No description' }}
+                                        {% if meta.sender_username %}
+                                            <br><small class="text-muted">From: {{ meta.sender_username }}</small>
+                                        {% elif meta.recipient_username %}
+                                            <br><small class="text-muted">To: {{ meta.recipient_username }}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if credit.transaction_type in ['add', 'transfer_in'] %}
+                                            <span class="text-success">+{{ "%.2f"|format(credit.amount) }}</span>
+                                        {% else %}
+                                            <span class="text-danger">-{{ "%.2f"|format(credit.amount) }}</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-coins fa-3x text-muted mb-3"></i>
+                        <h5>No transactions yet</h5>
+                        <p class="text-muted">Start by adding some credits or earning them through hydrogen production</p>
+                        <a href="{{ url_for('certificates') }}" class="btn btn-success">
+                            Issue Certificate to Earn Credits
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Real-time balance updates
+if (typeof io !== 'undefined') {
+    const socket = io();
+    
+    socket.on('credit_update', function(data) {
+        if (data.user_id === {{ current_user.id }}) {
+            location.reload(); // Refresh to show updated balance
+        }
+    });
+}
+
+// Form validation
+document.getElementById('transfer_amount').addEventListener('input', function() {
+    const amount = parseFloat(this.value) || 0;
+    const available = {{ total_credits }};
+    const button = this.form.querySelector('button[type="submit"]');
+    
+    if (amount > available) {
+        this.setCustomValidity('Amount exceeds available credits');
+        button.disabled = true;
+    } else if (amount <= 0) {
+        this.setCustomValidity('Amount must be greater than 0');
+        button.disabled = true;
+    } else {
+        this.setCustomValidity('');
+        button.disabled = false;
+    }
+});
+
+// Auto-suggest usernames (if needed)
+document.getElementById('recipient').addEventListener('input', function() {
+    // Could implement username auto-complete here
+});
+</script>
+{% endblock %}

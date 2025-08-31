@@ -3,35 +3,20 @@ from datetime import datetime
 from flask import render_template, request, redirect, url_for, flash, jsonify
 from flask_login import login_user, logout_user, login_required, current_user
 from app import app, db
-from models import User, Certificate, Credit, Block
+from models import User, Certificate, Credit, Block, Notification
+from blockchain import BlockchainSimulator
+from analytics import AnalyticsManager
+from marketplace import CarbonCreditMarketplace
 
 @app.route('/')
 def index():
     # Get basic statistics
-    total_users = User.query.count()
-    total_certificates = Certificate.query.count()
-    total_blocks = Block.query.count()
-    
-    blockchain_stats = {
-        'total_blocks': total_blocks,
-        'latest_block': None
-    }
-    
-    platform_stats = {
-        'users': {'total': total_users},
-        'certificates': {'total': total_certificates},
-        'blocks': {'total': total_blocks},
-        'credits': {'total': Credit.query.count()},
-        'marketplace': {
-            'volume_24h': 0,
-            'avg_price_30d': 0,
-            'active_orders': 0
-        }
-    }
+    overview = AnalyticsManager.get_platform_overview()
+    blockchain_stats = BlockchainSimulator.get_blockchain_stats()
     
     return render_template('index.html', 
-                         blockchain_stats=blockchain_stats, 
-                         platform_stats=platform_stats)
+                          blockchain_stats=blockchain_stats, 
+                          platform_stats=overview)
 
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
@@ -96,33 +81,40 @@ def logout():
 @app.route('/dashboard')
 @login_required
 def dashboard():
-    # Get user statistics
-    total_credits = current_user.get_total_credits()
-    total_certificates = Certificate.query.filter_by(user_id=current_user.id).count()
+    # Get user analytics
+    user_analytics = AnalyticsManager.get_user_analytics(current_user.id)
     
     # Get recent certificates
     recent_certificates = Certificate.query.filter_by(user_id=current_user.id)\
-                                         .order_by(Certificate.issue_date.desc())\
-                                         .limit(5).all()
+                                          .order_by(Certificate.issue_date.desc())\
+                                          .limit(5).all()
     
     # Get recent credit transactions
     recent_credits = Credit.query.filter_by(user_id=current_user.id)\
                                 .order_by(Credit.date.desc())\
                                 .limit(5).all()
     
-    # Get basic stats
-    blockchain_stats = {'total_blocks': Block.query.count()}
-    recent_orders = []
-    unread_notifications = 0
+    # Get recent orders and transactions
+    recent_orders = CarbonCreditMarketplace.get_user_orders(current_user.id)[:5]
+    recent_transactions = CarbonCreditMarketplace.get_user_transactions(current_user.id)[:5]
+    
+    # Get blockchain stats
+    blockchain_stats = BlockchainSimulator.get_blockchain_stats()
+    
+    # Get unread notifications count
+    unread_notifications = Notification.query.filter_by(
+        user_id=current_user.id,
+        is_read=False
+    ).count()
     
     return render_template('dashboard.html', 
-                         total_credits=total_credits,
-                         total_certificates=total_certificates,
-                         recent_certificates=recent_certificates,
-                         recent_credits=recent_credits,
-                         recent_orders=recent_orders,
-                         blockchain_stats=blockchain_stats,
-                         unread_notifications=unread_notifications)
+                          user_analytics=user_analytics,
+                          recent_certificates=recent_certificates,
+                          recent_credits=recent_credits,
+                          recent_orders=recent_orders,
+                          recent_transactions=recent_transactions,
+                          blockchain_stats=blockchain_stats,
+                          unread_notifications=unread_notifications)
 
 @app.route('/certificates', methods=['GET', 'POST'])
 @login_required
@@ -149,7 +141,16 @@ def certificates():
         db.session.add(certificate)
         db.session.commit()
         
-        # Certificate created successfully
+        # Add to blockchain
+        blockchain_transaction = {
+            'type': 'certificate_issued',
+            'certificate_id': certificate_id,
+            'user_id': current_user.id,
+            'hydrogen_amount': hydrogen_amount,
+            'production_method': production_method,
+            'timestamp': datetime.utcnow().isoformat()
+        }
+        BlockchainSimulator.add_block([blockchain_transaction])
         
         flash('Certificate issued successfully!', 'success')
         return redirect(url_for('certificates'))
@@ -172,10 +173,10 @@ def certificates():
     user_certificates = query.order_by(Certificate.issue_date.desc()).all()
     
     return render_template('certificates.html', 
-                         certificates=user_certificates,
-                         search=search,
-                         status_filter=status_filter,
-                         verification_filter=verification_filter)
+                          certificates=user_certificates,
+                          search=search,
+                          status_filter=status_filter,
+                          verification_filter=verification_filter)
 
 @app.route('/credits', methods=['GET', 'POST'])
 @login_required
@@ -195,7 +196,15 @@ def credits():
             db.session.add(credit)
             db.session.commit()
             
-            # Credits added successfully
+            # Add to blockchain
+            blockchain_transaction = {
+                'type': 'credits_added',
+                'user_id': current_user.id,
+                'amount': amount,
+                'source': source,
+                'timestamp': datetime.utcnow().isoformat()
+            }
+            BlockchainSimulator.add_block([blockchain_transaction])
             
             flash(f'Added {amount} credits successfully!', 'success')
         
@@ -243,7 +252,15 @@ def credits():
             db.session.add(credit_in)
             db.session.commit()
             
-            # Transfer completed successfully
+            # Add to blockchain
+            blockchain_transaction = {
+                'type': 'credit_transfer',
+                'from_user_id': current_user.id,
+                'to_user_id': recipient.id,
+                'amount': amount,
+                'timestamp': datetime.utcnow().isoformat()
+            }
+            BlockchainSimulator.add_block([blockchain_transaction])
             
             flash(f'Transferred {amount} credits to {recipient.username}!', 'success')
     
@@ -254,74 +271,92 @@ def credits():
     total_credits = current_user.get_total_credits()
     
     return render_template('credits.html', 
-                         credits=user_credits, 
-                         total_credits=total_credits)
+                          credits=user_credits, 
+                          total_credits=total_credits)
 
 @app.route('/blockchain')
 @login_required
 def blockchain():
     # Get blockchain data
     blocks = Block.query.order_by(Block.index.desc()).limit(10).all()
+    blockchain_stats = BlockchainSimulator.get_blockchain_stats()
     
     return render_template('blockchain.html', 
-                         is_valid=True,
-                         validation_message='Blockchain is valid',
-                         blocks=blocks)
+                          is_valid=blockchain_stats['is_valid'],
+                          validation_message='Blockchain is valid' if blockchain_stats['is_valid'] else 'Blockchain validation failed',
+                          blocks=blocks,
+                          blockchain_stats=blockchain_stats)
 
-@app.route('/marketplace')
+@app.route('/marketplace', methods=['GET', 'POST'])
 @login_required
 def marketplace():
-    # Simplified marketplace view
-    market_stats = {'total_volume': 0, 'active_orders': 0}
+    if request.method == 'POST':
+        order_type = request.form['order_type']
+        amount = float(request.form['amount'])
+        price = float(request.form['price'])
+        
+        success, message = CarbonCreditMarketplace.create_order(
+            current_user.id, order_type, amount, price
+        )
+        
+        if success:
+            flash(message, 'success')
+        else:
+            flash(message, 'error')
+        
+        return redirect(url_for('marketplace'))
+    
+    # Get market data
+    market_stats = CarbonCreditMarketplace.get_market_stats()
+    orderbook = CarbonCreditMarketplace.get_order_book()
+    user_orders = CarbonCreditMarketplace.get_user_orders(current_user.id)
+    user_transactions = CarbonCreditMarketplace.get_user_transactions(current_user.id)
     
     return render_template('marketplace.html',
-                         market_stats=market_stats,
-                         orderbook={'buy_orders': [], 'sell_orders': []},
-                         user_orders=[],
-                         user_transactions=[],
-                         user_balance=current_user.get_total_credits())
+                          market_stats=market_stats,
+                          orderbook=orderbook,
+                          user_orders=user_orders,
+                          user_transactions=user_transactions,
+                          user_balance=current_user.get_total_credits())
 
-@app.route('/marketplace/order', methods=['POST'])
+@app.route('/marketplace/cancel/<int:order_id>')
 @login_required
-def create_market_order():
-    order_type = request.form['order_type']
-    amount = float(request.form['amount'])
-    price = float(request.form['price'])
+def cancel_order(order_id):
+    success, message = CarbonCreditMarketplace.cancel_order(order_id, current_user.id)
     
-    flash(f'{order_type.capitalize()} order feature coming soon!', 'info')
+    if success:
+        flash(message, 'success')
+    else:
+        flash(message, 'error')
     
     return redirect(url_for('marketplace'))
 
 @app.route('/analytics')
 @login_required
 def analytics():
-    # Basic analytics
-    overview = {
-        'total_users': User.query.count(),
-        'total_certificates': Certificate.query.count(),
-        'total_credits': Credit.query.count()
-    }
+    overview = AnalyticsManager.get_platform_overview()
+    production_stats = AnalyticsManager.get_production_statistics()
+    carbon_analysis = AnalyticsManager.get_carbon_analysis()
+    market_analysis = AnalyticsManager.get_market_analysis()
     
     return render_template('analytics.html',
-                         overview=overview,
-                         production_stats={},
-                         carbon_analysis={})
+                          overview=overview,
+                          production_stats=production_stats,
+                          carbon_analysis=carbon_analysis,
+                          market_analysis=market_analysis)
 
 @app.route('/notifications')
 @login_required
 def notifications():
-    # Get user notifications from database
-    from models import Notification
     user_notifications = Notification.query.filter_by(user_id=current_user.id)\
                                            .order_by(Notification.created_at.desc()).all()
     
     return render_template('notifications.html', 
-                         notifications=user_notifications)
+                          notifications=user_notifications)
 
 @app.route('/notifications/<int:notification_id>/read', methods=['POST'])
 @login_required
 def mark_notification_read(notification_id):
-    from models import Notification
     notification = Notification.query.filter_by(id=notification_id, user_id=current_user.id).first()
     
     if notification:
@@ -349,7 +384,7 @@ def export_trades():
     flash('Export feature coming soon!', 'info')
     return redirect(url_for('marketplace'))
 
-# Legacy API routes for backward compatibility
+# API routes for backward compatibility
 @app.route('/api/blocks')
 @login_required
 def api_blocks():
@@ -360,25 +395,24 @@ def api_blocks():
         blocks_data.append({
             'index': block.index,
             'hash': block.hash,
-            'previous_hash': block.previous_hash,
             'timestamp': block.timestamp.isoformat(),
+            'previous_hash': block.previous_hash,
             'transactions': block.get_transactions(),
             'nonce': block.nonce,
-            'difficulty': block.difficulty,
-            'miner_address': block.miner_address
+            'difficulty': block.difficulty
         })
     
     return jsonify(blocks_data)
 
-@app.route('/api/transactions')
+@app.route('/api/stats')
 @login_required
-def api_transactions():
-    transactions = BlockchainSimulator.get_transaction_history()
-    return jsonify(transactions)
-
-@app.route('/api/analytics/<category>')
-@login_required
-def api_analytics_data(category):
-    days = request.args.get('days', 30, type=int)
-    data = AnalyticsManager.get_time_series_data(category, days)
-    return jsonify(data)
+def api_stats():
+    overview = AnalyticsManager.get_platform_overview()
+    blockchain_stats = BlockchainSimulator.get_blockchain_stats()
+    market_stats = CarbonCreditMarketplace.get_market_stats()
+    
+    return jsonify({
+        'platform': overview,
+        'blockchain': blockchain_stats,
+        'marketplace': market_stats
+    })

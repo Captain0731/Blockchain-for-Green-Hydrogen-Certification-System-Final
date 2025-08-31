@@ -1,5 +1,5 @@
 from datetime import datetime
-from app import db, socketio
+from app import db
 from models import Notification, User
 
 class NotificationManager:
@@ -7,12 +7,11 @@ class NotificationManager:
     @staticmethod
     def create_notification(user_id, title, message, notification_type, meta_data=None):
         """Create a new notification"""
-        notification = Notification(
-            user_id=user_id,
-            title=title,
-            message=message,
-            notification_type=notification_type
-        )
+        notification = Notification()
+        notification.user_id = user_id
+        notification.title = title
+        notification.message = message
+        notification.notification_type = notification_type
         
         if meta_data:
             notification.set_meta(meta_data)
@@ -21,13 +20,17 @@ class NotificationManager:
         db.session.commit()
         
         # Emit real-time notification
-        socketio.emit('new_notification', {
-            'id': notification.id,
-            'title': notification.title,
-            'message': notification.message,
-            'type': notification.notification_type,
-            'timestamp': notification.created_at.isoformat()
-        }, room=f'user_{user_id}')
+        try:
+            from app import socketio
+            socketio.emit('new_notification', {
+                'id': notification.id,
+                'title': notification.title,
+                'message': notification.message,
+                'type': notification.notification_type,
+                'timestamp': notification.created_at.isoformat()
+            }, to=f'user_{user_id}')
+        except Exception as e:
+            print(f"Could not emit notification: {e}")
         
         return notification
     

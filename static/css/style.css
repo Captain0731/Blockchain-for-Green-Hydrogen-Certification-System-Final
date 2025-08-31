@@ -1,0 +1,259 @@
+/* Custom styles for Green Hydrogen Platform */
+/* Minimal custom CSS - relies mainly on Bootstrap dark theme */
+
+/* Custom CSS Variables for additional theming */
+:root {
+  --hydrogen-green: #28a745;
+  --hydrogen-blue: #007bff;
+  --blockchain-purple: #6f42c1;
+  --carbon-orange: #fd7e14;
+}
+
+/* Loading animations */
+.loading-spinner {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: #fff;
+  animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Blockchain visualization container */
+#blockchain-visualization {
+  border: 2px solid var(--bs-border-color);
+  border-radius: var(--bs-border-radius);
+  cursor: move;
+  user-select: none;
+}
+
+#blockchain-visualization canvas {
+  border-radius: var(--bs-border-radius);
+}
+
+/* Notification animations */
+.notification-item {
+  transition: all 0.3s ease;
+}
+
+.notification-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Chart containers */
+.chart-container {
+  position: relative;
+  height: 300px;
+  margin: 1rem 0;
+}
+
+/* Progress bars with smooth animation */
+.progress-bar {
+  transition: width 1s ease-in-out;
+}
+
+/* Custom badges for different types */
+.badge-hydrogen {
+  background-color: var(--hydrogen-green);
+  color: white;
+}
+
+.badge-blockchain {
+  background-color: var(--blockchain-purple);
+  color: white;
+}
+
+.badge-carbon {
+  background-color: var(--carbon-orange);
+  color: white;
+}
+
+/* Card hover effects */
+.card {
+  transition: transform 0.2s ease-in-out;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+}
+
+/* Table improvements */
+.table-responsive {
+  border-radius: var(--bs-border-radius);
+}
+
+.table th {
+  border-bottom: 2px solid var(--bs-border-color);
+  font-weight: 600;
+}
+
+/* Button improvements */
+.btn {
+  transition: all 0.2s ease-in-out;
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+}
+
+/* WebSocket connection indicator */
+.connection-status {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 1050;
+  padding: 0.5rem 1rem;
+  border-radius: 50px;
+  font-size: 0.875rem;
+  transition: all 0.3s ease;
+}
+
+.connection-status.connected {
+  background-color: var(--bs-success);
+  color: white;
+}
+
+.connection-status.disconnected {
+  background-color: var(--bs-danger);
+  color: white;
+}
+
+/* Form enhancements */
+.form-control:focus {
+  border-color: var(--hydrogen-blue);
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.form-select:focus {
+  border-color: var(--hydrogen-blue);
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+/* Alert improvements */
+.alert {
+  border: none;
+  border-left: 4px solid;
+  border-radius: var(--bs-border-radius);
+}
+
+.alert-success {
+  border-left-color: var(--bs-success);
+  background-color: rgba(40, 167, 69, 0.1);
+}
+
+.alert-info {
+  border-left-color: var(--bs-info);
+  background-color: rgba(23, 162, 184, 0.1);
+}
+
+.alert-warning {
+  border-left-color: var(--bs-warning);
+  background-color: rgba(255, 193, 7, 0.1);
+}
+
+.alert-danger {
+  border-left-color: var(--bs-danger);
+  background-color: rgba(220, 53, 69, 0.1);
+}
+
+/* Code styling for blockchain hashes */
+code {
+  padding: 0.2rem 0.4rem;
+  font-size: 0.875em;
+  color: var(--bs-info);
+  background-color: rgba(23, 162, 184, 0.1);
+  border-radius: 0.25rem;
+}
+
+/* Mobile responsiveness improvements */
+@media (max-width: 768px) {
+  .card-body {
+    padding: 1rem 0.75rem;
+  }
+  
+  .btn-group {
+    flex-direction: column;
+  }
+  
+  .btn-group .btn {
+    border-radius: var(--bs-border-radius) !important;
+    margin-bottom: 0.25rem;
+  }
+  
+  .table-responsive {
+    border: none;
+  }
+  
+  .connection-status {
+    bottom: 10px;
+    right: 10px;
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+  }
+}
+
+/* Accessibility improvements */
+@media (prefers-reduced-motion: reduce) {
+  .card,
+  .btn,
+  .notification-item,
+  .progress-bar {
+    transition: none;
+  }
+  
+  @keyframes spin {
+    to { transform: none; }
+  }
+}
+
+/* Focus indicators for keyboard navigation */
+.btn:focus,
+.form-control:focus,
+.form-select:focus {
+  outline: 2px solid var(--bs-primary);
+  outline-offset: 2px;
+}
+
+/* Custom scrollbar for webkit browsers */
+.table-responsive::-webkit-scrollbar {
+  height: 8px;
+}
+
+.table-responsive::-webkit-scrollbar-track {
+  background: var(--bs-gray-800);
+  border-radius: 4px;
+}
+
+.table-responsive::-webkit-scrollbar-thumb {
+  background: var(--bs-gray-600);
+  border-radius: 4px;
+}
+
+.table-responsive::-webkit-scrollbar-thumb:hover {
+  background: var(--bs-gray-500);
+}
+
+/* Print styles */
+@media print {
+  .navbar,
+  .btn,
+  .connection-status {
+    display: none !important;
+  }
+  
+  .card {
+    border: 1px solid #000;
+    break-inside: avoid;
+  }
+  
+  body {
+    color: #000 !important;
+    background: #fff !important;
+  }
+}

@@ -1,0 +1,263 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Green Hydrogen Platform{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2><i class="fas fa-dashboard me-2"></i>Dashboard</h2>
+        <p class="text-muted">Welcome back, {{ current_user.username }}!</p>
+    </div>
+</div>
+
+<!-- User Stats Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="card-title">Total Credits</h6>
+                        <h3>{{ user_analytics.credits.total if user_analytics else 0 }}</h3>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-coins fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="card-title">Certificates</h6>
+                        <h3>{{ user_analytics.certificates.total if user_analytics else 0 }}</h3>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-certificate fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="card-title">Trades</h6>
+                        <h3>{{ user_analytics.trading.total_trades if user_analytics else 0 }}</h3>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-exchange-alt fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card bg-warning text-dark">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="card-title">Notifications</h6>
+                        <h3>{{ unread_notifications }}</h3>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-bell fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Activity -->
+<div class="row">
+    <!-- Recent Certificates -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5><i class="fas fa-certificate me-2"></i>Recent Certificates</h5>
+                <a href="{{ url_for('certificates') }}" class="btn btn-sm btn-outline-primary">View All</a>
+            </div>
+            <div class="card-body">
+                {% if recent_certificates %}
+                    <div class="list-group list-group-flush">
+                        {% for cert in recent_certificates %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>{{ cert.certificate_id }}</strong>
+                                <small class="text-muted d-block">{{ cert.issue_date.strftime('%Y-%m-%d %H:%M') }}</small>
+                            </div>
+                            <span class="badge bg-{{ 'success' if cert.verification_status == 'verified' else 'warning' }}">
+                                {{ cert.verification_status.title() }}
+                            </span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-muted text-center">No certificates issued yet</p>
+                    <div class="text-center">
+                        <a href="{{ url_for('certificates') }}" class="btn btn-success">Issue Your First Certificate</a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Credits -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5><i class="fas fa-coins me-2"></i>Recent Credit Transactions</h5>
+                <a href="{{ url_for('credits') }}" class="btn btn-sm btn-outline-primary">View All</a>
+            </div>
+            <div class="card-body">
+                {% if recent_credits %}
+                    <div class="list-group list-group-flush">
+                        {% for credit in recent_credits %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>{{ credit.transaction_type.replace('_', ' ').title() }}</strong>
+                                <small class="text-muted d-block">{{ credit.date.strftime('%Y-%m-%d %H:%M') }}</small>
+                            </div>
+                            <span class="badge bg-{{ 'success' if credit.transaction_type in ['add', 'transfer_in'] else 'danger' }}">
+                                {{ '+' if credit.transaction_type in ['add', 'transfer_in'] else '-' }}{{ credit.amount }}
+                            </span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-muted text-center">No credit transactions yet</p>
+                    <div class="text-center">
+                        <a href="{{ url_for('credits') }}" class="btn btn-primary">Manage Credits</a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Market Activity -->
+<div class="row">
+    <!-- Recent Orders -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5><i class="fas fa-list me-2"></i>Recent Orders</h5>
+                <a href="{{ url_for('marketplace') }}" class="btn btn-sm btn-outline-primary">Trade Now</a>
+            </div>
+            <div class="card-body">
+                {% if recent_orders %}
+                    <div class="list-group list-group-flush">
+                        {% for order in recent_orders %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>{{ order.order_type.upper() }} {{ order.amount }} credits</strong>
+                                <small class="text-muted d-block">${{ "%.2f"|format(order.price_per_credit) }} each</small>
+                            </div>
+                            <span class="badge bg-{{ 'success' if order.status == 'filled' else 'primary' if order.status == 'active' else 'secondary' }}">
+                                {{ order.status.title() }}
+                            </span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-muted text-center">No trading orders yet</p>
+                    <div class="text-center">
+                        <a href="{{ url_for('marketplace') }}" class="btn btn-success">Start Trading</a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Blockchain Status -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-cubes me-2"></i>Blockchain Status</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-6">
+                        <h6>Total Blocks</h6>
+                        <h4>{{ blockchain_stats.total_blocks }}</h4>
+                    </div>
+                    <div class="col-6">
+                        <h6>Chain Status</h6>
+                        <h4>
+                            <span class="badge bg-{{ 'success' if blockchain_stats.is_valid else 'danger' }} fs-6">
+                                {{ 'Valid' if blockchain_stats.is_valid else 'Invalid' }}
+                            </span>
+                        </h4>
+                    </div>
+                </div>
+                <hr>
+                <div class="text-center">
+                    <a href="{{ url_for('blockchain') }}" class="btn btn-info">Explore Blockchain</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Initialize WebSocket connection for live updates
+if (typeof io !== 'undefined') {
+    const socket = io();
+    
+    socket.on('connect', function() {
+        console.log('Connected to WebSocket');
+        socket.emit('subscribe_to_notifications');
+    });
+    
+    socket.on('new_notification', function(data) {
+        // Update notification count
+        const notificationCount = document.getElementById('notification-count');
+        if (notificationCount) {
+            const currentCount = parseInt(notificationCount.textContent);
+            notificationCount.textContent = currentCount + 1;
+        }
+        
+        // Show toast notification
+        showToast('New Notification', data.message, 'info');
+    });
+    
+    socket.on('notification_subscription_confirmed', function(data) {
+        const notificationCount = document.getElementById('notification-count');
+        if (notificationCount) {
+            notificationCount.textContent = data.unread_count;
+        }
+    });
+}
+
+function showToast(title, message, type) {
+    // Simple toast notification implementation
+    const toast = document.createElement('div');
+    toast.className = `alert alert-${type} position-fixed top-0 end-0 m-3`;
+    toast.style.zIndex = '1060';
+    toast.innerHTML = `
+        <strong>${title}</strong><br>
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    document.body.appendChild(toast);
+    
+    // Auto remove after 5 seconds
+    setTimeout(() => {
+        if (toast.parentNode) {
+            toast.parentNode.removeChild(toast);
+        }
+    }, 5000);
+}
+</script>
+{% endblock %}

@@ -1,0 +1,410 @@
+{% extends "base.html" %}
+
+{% block title %}Analytics - Green Hydrogen Platform{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2><i class="fas fa-chart-bar me-2"></i>Platform Analytics</h2>
+        <p class="text-muted">Comprehensive insights into platform performance and environmental impact</p>
+    </div>
+</div>
+
+<!-- Overview Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body text-center">
+                <i class="fas fa-users fa-2x mb-2"></i>
+                <h4>{{ overview.users.total }}</h4>
+                <p class="mb-1">Total Users</p>
+                <small>+{{ overview.users.new_this_month }} this month</small>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body text-center">
+                <i class="fas fa-certificate fa-2x mb-2"></i>
+                <h4>{{ overview.certificates.total }}</h4>
+                <p class="mb-1">Certificates</p>
+                <small>{{ "%.1f"|format(overview.certificates.verification_rate) }}% verified</small>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body text-center">
+                <i class="fas fa-coins fa-2x mb-2"></i>
+                <h4>{{ "%.0f"|format(overview.credits.total) }}</h4>
+                <p class="mb-1">Total Credits</p>
+                <small>{{ "%.1f"|format(overview.credits.average_per_user) }} avg/user</small>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card bg-warning text-dark">
+            <div class="card-body text-center">
+                <i class="fas fa-dollar-sign fa-2x mb-2"></i>
+                <h4>${{ "%.0f"|format(overview.marketplace.total_volume) }}</h4>
+                <p class="mb-1">Trade Volume</p>
+                <small>{{ overview.marketplace.total_trades }} trades</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Row 1 -->
+<div class="row mb-4">
+    <!-- User Growth Chart -->
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-chart-line me-2"></i>User Growth</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="userGrowthChart" height="250"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Certificate Status Distribution -->
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-chart-pie me-2"></i>Certificate Status</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="certificateStatusChart" height="250"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Production Analytics -->
+<div class="row mb-4">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-industry me-2"></i>Hydrogen Production by Method</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="productionMethodChart" height="200"></canvas>
+                
+                <div class="row mt-4">
+                    <div class="col-md-6">
+                        <h6>Production Summary</h6>
+                        <p><strong>Total H₂ Produced:</strong> {{ "%.1f"|format(production_stats.total_hydrogen_kg) }} kg</p>
+                        <p><strong>Avg Carbon Intensity:</strong> {{ "%.2f"|format(production_stats.average_carbon_intensity) }} kg CO₂/kg H₂</p>
+                        <p><strong>Green Hydrogen %:</strong> {{ "%.1f"|format(production_stats.green_hydrogen_percentage) }}%</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Environmental Impact</h6>
+                        <p><strong>CO₂ Avoided:</strong> {{ "%.1f"|format(carbon_analysis.total_co2_avoided_kg) }} kg</p>
+                        <p><strong>Green Certificates:</strong> {{ carbon_analysis.green_certificates }}</p>
+                        <p><strong>Impact Score:</strong> {{ "%.0f"|format(carbon_analysis.environmental_impact_score) }}/100</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Quick Stats -->
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-tachometer-alt me-2"></i>Key Metrics</h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-12 mb-3">
+                        <h3 class="text-success">{{ "%.1f"|format(overview.users.growth_rate) }}%</h3>
+                        <small>User Growth Rate</small>
+                    </div>
+                    
+                    <div class="col-12 mb-3">
+                        <h3 class="text-info">{{ overview.blockchain.total_blocks }}</h3>
+                        <small>Blockchain Blocks</small>
+                    </div>
+                    
+                    <div class="col-12 mb-3">
+                        <h3 class="text-warning">{{ overview.marketplace.active_orders }}</h3>
+                        <small>Active Orders</small>
+                    </div>
+                    
+                    <div class="col-12">
+                        <h3 class="text-danger">${{ "%.2f"|format(overview.marketplace.average_trade_size) }}</h3>
+                        <small>Avg Trade Size</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Market Analysis -->
+<div class="row mb-4">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-chart-area me-2"></i>Market Activity (30 Days)</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="marketVolumeChart" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-balance-scale me-2"></i>Market Health</h5>
+            </div>
+            <div class="card-body">
+                <div class="progress mb-3">
+                    <div class="progress-bar bg-success" style="width: {{ (carbon_analysis.green_certificate_ratio * 100)|round }}%"></div>
+                </div>
+                <p class="small">Green Certificate Ratio: {{ "%.1f"|format(carbon_analysis.green_certificate_ratio * 100) }}%</p>
+                
+                <div class="progress mb-3">
+                    <div class="progress-bar bg-info" style="width: {{ (market_analysis.market_liquidity * 100)|round }}%"></div>
+                </div>
+                <p class="small">Market Liquidity: {{ "%.1f"|format(market_analysis.market_liquidity * 100) }}%</p>
+                
+                <div class="progress mb-3">
+                    <div class="progress-bar bg-warning" style="width: {{ (overview.certificates.verification_rate)|round }}%"></div>
+                </div>
+                <p class="small">Verification Rate: {{ "%.1f"|format(overview.certificates.verification_rate) }}%</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Detailed Tables -->
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-table me-2"></i>Production Methods</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Method</th>
+                                <th>Amount (kg)</th>
+                                <th>Share</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for method, amount in production_stats.production_by_method.items() %}
+                            <tr>
+                                <td>{{ method.replace('_', ' ').title() }}</td>
+                                <td>{{ "%.1f"|format(amount) }}</td>
+                                <td>{{ "%.1f"|format((amount / production_stats.total_hydrogen_kg * 100) if production_stats.total_hydrogen_kg > 0 else 0) }}%</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-calendar me-2"></i>Recent Activity</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Volume ($)</th>
+                                <th>Trades</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for date, volume in market_analysis.daily_volumes.items() %}
+                            <tr>
+                                <td>{{ date.strftime('%m/%d') if date else 'N/A' }}</td>
+                                <td>${{ "%.2f"|format(volume) }}</td>
+                                <td>-</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Chart.js configurations
+const chartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+        legend: {
+            labels: {
+                color: '#ffffff'
+            }
+        }
+    },
+    scales: {
+        y: {
+            ticks: {
+                color: '#ffffff'
+            },
+            grid: {
+                color: 'rgba(255,255,255,0.1)'
+            }
+        },
+        x: {
+            ticks: {
+                color: '#ffffff'
+            },
+            grid: {
+                color: 'rgba(255,255,255,0.1)'
+            }
+        }
+    }
+};
+
+// User Growth Chart
+const userGrowthCtx = document.getElementById('userGrowthChart').getContext('2d');
+new Chart(userGrowthCtx, {
+    type: 'line',
+    data: {
+        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug'],
+        datasets: [{
+            label: 'Total Users',
+            data: [0, 5, 12, 25, 42, 68, 89, {{ overview.users.total }}],
+            borderColor: '#0d6efd',
+            backgroundColor: 'rgba(13, 110, 253, 0.1)',
+            tension: 0.4
+        }]
+    },
+    options: chartOptions
+});
+
+// Certificate Status Chart
+const certificateStatusCtx = document.getElementById('certificateStatusChart').getContext('2d');
+new Chart(certificateStatusCtx, {
+    type: 'doughnut',
+    data: {
+        labels: ['Verified', 'Pending', 'Rejected'],
+        datasets: [{
+            data: [
+                {{ overview.certificates.verified }},
+                {{ overview.certificates.pending }},
+                {{ overview.certificates.total - overview.certificates.verified - overview.certificates.pending }}
+            ],
+            backgroundColor: ['#198754', '#ffc107', '#dc3545']
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                labels: {
+                    color: '#ffffff'
+                }
+            }
+        }
+    }
+});
+
+// Production Method Chart
+const productionMethodCtx = document.getElementById('productionMethodChart').getContext('2d');
+const productionData = {
+    {% for method, amount in production_stats.production_by_method.items() %}
+    '{{ method }}': {{ amount }},
+    {% endfor %}
+};
+
+new Chart(productionMethodCtx, {
+    type: 'bar',
+    data: {
+        labels: Object.keys(productionData).map(key => key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())),
+        datasets: [{
+            label: 'Hydrogen Produced (kg)',
+            data: Object.values(productionData),
+            backgroundColor: [
+                '#198754', // Green for renewable
+                '#17a2b8', // Teal for biomass
+                '#ffc107', // Yellow for CCS
+                '#dc3545'  // Red for conventional
+            ]
+        }]
+    },
+    options: chartOptions
+});
+
+// Market Volume Chart
+const marketVolumeCtx = document.getElementById('marketVolumeChart').getContext('2d');
+const marketData = {{ market_analysis.daily_volumes|tojson }};
+
+new Chart(marketVolumeCtx, {
+    type: 'line',
+    data: {
+        labels: Object.keys(marketData),
+        datasets: [{
+            label: 'Daily Volume ($)',
+            data: Object.values(marketData),
+            borderColor: '#fd7e14',
+            backgroundColor: 'rgba(253, 126, 20, 0.1)',
+            fill: true,
+            tension: 0.4
+        }]
+    },
+    options: chartOptions
+});
+
+// Real-time updates
+if (typeof io !== 'undefined') {
+    const socket = io();
+    
+    socket.on('connect', function() {
+        // Request live analytics data every 30 seconds
+        setInterval(function() {
+            socket.emit('request_live_data', { type: 'analytics' });
+        }, 30000);
+    });
+    
+    socket.on('live_analytics_data', function(data) {
+        // Update key metrics
+        updateAnalyticsData(data);
+    });
+}
+
+function updateAnalyticsData(data) {
+    // Update overview cards with new data
+    // This would update the displayed numbers in real-time
+    console.log('Analytics data updated:', data);
+}
+
+// Progress bars animation
+document.addEventListener('DOMContentLoaded', function() {
+    const progressBars = document.querySelectorAll('.progress-bar');
+    progressBars.forEach(bar => {
+        const width = bar.style.width;
+        bar.style.width = '0%';
+        setTimeout(() => {
+            bar.style.width = width;
+            bar.style.transition = 'width 1s ease-in-out';
+        }, 500);
+    });
+});
+</script>
+{% endblock %}

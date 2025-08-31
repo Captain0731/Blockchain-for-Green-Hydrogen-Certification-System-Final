@@ -1,0 +1,478 @@
+{% extends "base.html" %}
+
+{% block title %}Notifications - Green Hydrogen Platform{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h2><i class="fas fa-bell me-2"></i>Notifications</h2>
+                <p class="text-muted">Stay updated with platform activities and your account status</p>
+            </div>
+            <div>
+                {% if notifications %}
+                <button id="mark-all-read" class="btn btn-outline-primary">
+                    <i class="fas fa-check-double me-2"></i>Mark All Read
+                </button>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Notification Stats -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-warning text-dark">
+            <div class="card-body text-center">
+                <i class="fas fa-bell fa-2x mb-2"></i>
+                <h4>{{ notifications|selectattr("is_read", "equalto", false)|list|length }}</h4>
+                <p class="mb-0">Unread</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body text-center">
+                <i class="fas fa-certificate fa-2x mb-2"></i>
+                <h4>{{ notifications|selectattr("notification_type", "equalto", "certificate_update")|list|length }}</h4>
+                <p class="mb-0">Certificates</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body text-center">
+                <i class="fas fa-exchange-alt fa-2x mb-2"></i>
+                <h4>{{ notifications|selectattr("notification_type", "equalto", "trade_executed")|list|length }}</h4>
+                <p class="mb-0">Trades</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body text-center">
+                <i class="fas fa-cubes fa-2x mb-2"></i>
+                <h4>{{ notifications|selectattr("notification_type", "equalto", "blockchain_confirmation")|list|length }}</h4>
+                <p class="mb-0">Blockchain</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filter Options -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="btn-group w-100" role="group">
+                            <input type="radio" class="btn-check" name="filter" id="all" value="all" checked>
+                            <label class="btn btn-outline-primary" for="all">All</label>
+                            
+                            <input type="radio" class="btn-check" name="filter" id="unread" value="unread">
+                            <label class="btn btn-outline-warning" for="unread">Unread</label>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div class="btn-group w-100" role="group">
+                            <input type="radio" class="btn-check" name="type-filter" id="all-types" value="all" checked>
+                            <label class="btn btn-outline-secondary" for="all-types">All Types</label>
+                            
+                            <input type="radio" class="btn-check" name="type-filter" id="certificates" value="certificate_update">
+                            <label class="btn btn-outline-success" for="certificates">Certificates</label>
+                            
+                            <input type="radio" class="btn-check" name="type-filter" id="trades" value="trade_executed">
+                            <label class="btn btn-outline-info" for="trades">Trades</label>
+                            
+                            <input type="radio" class="btn-check" name="type-filter" id="blockchain" value="blockchain_confirmation">
+                            <label class="btn btn-outline-primary" for="blockchain">Blockchain</label>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-3">
+                        <button id="clear-filters" class="btn btn-outline-secondary w-100">
+                            <i class="fas fa-times me-2"></i>Clear Filters
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Notifications List -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-list me-2"></i>Recent Notifications</h5>
+            </div>
+            <div class="card-body">
+                {% if notifications %}
+                    <div id="notifications-list">
+                        {% for notification in notifications %}
+                        <div class="notification-item border rounded p-3 mb-3 {{ 'border-warning bg-warning bg-opacity-10' if not notification.is_read else '' }}"
+                             data-notification-id="{{ notification.id }}"
+                             data-notification-type="{{ notification.notification_type }}"
+                             data-is-read="{{ notification.is_read|lower }}">
+                            
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="flex-grow-1">
+                                    <div class="d-flex align-items-center mb-2">
+                                        {% if notification.notification_type == 'certificate_update' %}
+                                            <i class="fas fa-certificate text-success me-2"></i>
+                                        {% elif notification.notification_type == 'trade_executed' %}
+                                            <i class="fas fa-exchange-alt text-info me-2"></i>
+                                        {% elif notification.notification_type == 'blockchain_confirmation' %}
+                                            <i class="fas fa-cubes text-primary me-2"></i>
+                                        {% elif notification.notification_type == 'system_alert' %}
+                                            <i class="fas fa-exclamation-triangle text-warning me-2"></i>
+                                        {% else %}
+                                            <i class="fas fa-bell text-muted me-2"></i>
+                                        {% endif %}
+                                        
+                                        <h6 class="mb-0">{{ notification.title }}</h6>
+                                        
+                                        {% if not notification.is_read %}
+                                        <span class="badge bg-warning text-dark ms-2">New</span>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <p class="mb-2 text-muted">{{ notification.message }}</p>
+                                    
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <small class="text-muted">
+                                            <i class="fas fa-clock me-1"></i>
+                                            {{ notification.created_at.strftime('%Y-%m-%d %H:%M') }}
+                                        </small>
+                                        
+                                        {% set meta = notification.get_meta() %}
+                                        {% if meta %}
+                                        <div class="notification-meta">
+                                            {% if meta.certificate_id %}
+                                            <span class="badge bg-secondary">{{ meta.certificate_id }}</span>
+                                            {% endif %}
+                                            {% if meta.block_index %}
+                                            <span class="badge bg-primary">Block #{{ meta.block_index }}</span>
+                                            {% endif %}
+                                            {% if meta.total_price %}
+                                            <span class="badge bg-info">${{ "%.2f"|format(meta.total_price) }}</span>
+                                            {% endif %}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                
+                                <div class="ms-3">
+                                    <div class="dropdown">
+                                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" 
+                                                data-bs-toggle="dropdown">
+                                            <i class="fas fa-ellipsis-v"></i>
+                                        </button>
+                                        <ul class="dropdown-menu">
+                                            {% if not notification.is_read %}
+                                            <li>
+                                                <a class="dropdown-item mark-read-btn" 
+                                                   href="#" 
+                                                   data-notification-id="{{ notification.id }}">
+                                                    <i class="fas fa-check me-2"></i>Mark as Read
+                                                </a>
+                                            </li>
+                                            {% endif %}
+                                            <li>
+                                                <a class="dropdown-item text-danger delete-notification-btn" 
+                                                   href="#" 
+                                                   data-notification-id="{{ notification.id }}">
+                                                    <i class="fas fa-trash me-2"></i>Delete
+                                                </a>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-bell-slash fa-3x text-muted mb-3"></i>
+                        <h5>No notifications</h5>
+                        <p class="text-muted">You're all caught up! New notifications will appear here.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Notification Preferences -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-cog me-2"></i>Notification Preferences</h5>
+            </div>
+            <div class="card-body">
+                <form id="notification-preferences-form">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-check form-switch mb-3">
+                                <input class="form-check-input" type="checkbox" id="blockchain-events" checked>
+                                <label class="form-check-label" for="blockchain-events">
+                                    <i class="fas fa-cubes me-2"></i>Blockchain Events
+                                </label>
+                            </div>
+                            
+                            <div class="form-check form-switch mb-3">
+                                <input class="form-check-input" type="checkbox" id="certificate-updates" checked>
+                                <label class="form-check-label" for="certificate-updates">
+                                    <i class="fas fa-certificate me-2"></i>Certificate Updates
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="form-check form-switch mb-3">
+                                <input class="form-check-input" type="checkbox" id="marketplace-activity" checked>
+                                <label class="form-check-label" for="marketplace-activity">
+                                    <i class="fas fa-store me-2"></i>Marketplace Activity
+                                </label>
+                            </div>
+                            
+                            <div class="form-check form-switch mb-3">
+                                <input class="form-check-input" type="checkbox" id="system-alerts" checked>
+                                <label class="form-check-label" for="system-alerts">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>System Alerts
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="text-end">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i>Save Preferences
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Real-time notifications
+if (typeof io !== 'undefined') {
+    const socket = io();
+    
+    socket.on('connect', function() {
+        socket.emit('subscribe_to_notifications');
+    });
+    
+    socket.on('new_notification', function(data) {
+        addNewNotification(data);
+        updateNotificationCount();
+    });
+    
+    socket.on('notification_subscription_confirmed', function(data) {
+        console.log('Subscribed to notifications, unread:', data.unread_count);
+    });
+}
+
+// Mark as read functionality
+document.addEventListener('click', function(e) {
+    if (e.target.classList.contains('mark-read-btn') || e.target.closest('.mark-read-btn')) {
+        e.preventDefault();
+        const btn = e.target.closest('.mark-read-btn');
+        const notificationId = btn.dataset.notificationId;
+        markAsRead(notificationId);
+    }
+    
+    if (e.target.classList.contains('delete-notification-btn') || e.target.closest('.delete-notification-btn')) {
+        e.preventDefault();
+        const btn = e.target.closest('.delete-notification-btn');
+        const notificationId = btn.dataset.notificationId;
+        if (confirm('Delete this notification?')) {
+            deleteNotification(notificationId);
+        }
+    }
+});
+
+// Mark all as read
+document.getElementById('mark-all-read')?.addEventListener('click', function() {
+    if (confirm('Mark all notifications as read?')) {
+        markAllAsRead();
+    }
+});
+
+// Filter functionality
+document.querySelectorAll('input[name="filter"]').forEach(radio => {
+    radio.addEventListener('change', filterNotifications);
+});
+
+document.querySelectorAll('input[name="type-filter"]').forEach(radio => {
+    radio.addEventListener('change', filterNotifications);
+});
+
+document.getElementById('clear-filters')?.addEventListener('click', function() {
+    document.getElementById('all').checked = true;
+    document.getElementById('all-types').checked = true;
+    filterNotifications();
+});
+
+function markAsRead(notificationId) {
+    fetch(`/notifications/${notificationId}/read`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const notificationElement = document.querySelector(`[data-notification-id="${notificationId}"]`);
+            if (notificationElement) {
+                notificationElement.classList.remove('border-warning', 'bg-warning', 'bg-opacity-10');
+                notificationElement.dataset.isRead = 'true';
+                
+                const newBadge = notificationElement.querySelector('.badge.bg-warning');
+                if (newBadge) newBadge.remove();
+                
+                const markReadBtn = notificationElement.querySelector('.mark-read-btn');
+                if (markReadBtn) markReadBtn.closest('li').remove();
+            }
+            updateNotificationCount();
+        }
+    });
+}
+
+function markAllAsRead() {
+    // Implementation would call backend to mark all as read
+    const unreadNotifications = document.querySelectorAll('[data-is-read="false"]');
+    unreadNotifications.forEach(notification => {
+        const id = notification.dataset.notificationId;
+        markAsRead(id);
+    });
+}
+
+function deleteNotification(notificationId) {
+    // Implementation would call backend to delete notification
+    const notificationElement = document.querySelector(`[data-notification-id="${notificationId}"]`);
+    if (notificationElement) {
+        notificationElement.style.opacity = '0.5';
+        notificationElement.style.transform = 'translateX(-20px)';
+        setTimeout(() => {
+            notificationElement.remove();
+        }, 300);
+    }
+}
+
+function filterNotifications() {
+    const readFilter = document.querySelector('input[name="filter"]:checked').value;
+    const typeFilter = document.querySelector('input[name="type-filter"]:checked').value;
+    
+    const notifications = document.querySelectorAll('.notification-item');
+    
+    notifications.forEach(notification => {
+        let show = true;
+        
+        // Apply read filter
+        if (readFilter === 'unread' && notification.dataset.isRead === 'true') {
+            show = false;
+        }
+        
+        // Apply type filter
+        if (typeFilter !== 'all' && notification.dataset.notificationType !== typeFilter) {
+            show = false;
+        }
+        
+        notification.style.display = show ? 'block' : 'none';
+    });
+}
+
+function addNewNotification(data) {
+    const notificationsList = document.getElementById('notifications-list');
+    if (!notificationsList) return;
+    
+    const notificationHtml = `
+        <div class="notification-item border rounded p-3 mb-3 border-warning bg-warning bg-opacity-10"
+             data-notification-id="${data.id}"
+             data-notification-type="${data.type}"
+             data-is-read="false">
+            
+            <div class="d-flex justify-content-between align-items-start">
+                <div class="flex-grow-1">
+                    <div class="d-flex align-items-center mb-2">
+                        <i class="fas fa-bell text-warning me-2"></i>
+                        <h6 class="mb-0">${data.title}</h6>
+                        <span class="badge bg-warning text-dark ms-2">New</span>
+                    </div>
+                    
+                    <p class="mb-2 text-muted">${data.message}</p>
+                    
+                    <div class="d-flex justify-content-between align-items-center">
+                        <small class="text-muted">
+                            <i class="fas fa-clock me-1"></i>
+                            ${new Date(data.timestamp).toLocaleString()}
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    notificationsList.insertAdjacentHTML('afterbegin', notificationHtml);
+}
+
+function updateNotificationCount() {
+    const unreadCount = document.querySelectorAll('[data-is-read="false"]').length;
+    const countBadge = document.getElementById('notification-count');
+    if (countBadge) {
+        countBadge.textContent = unreadCount;
+    }
+}
+
+// Notification preferences
+document.getElementById('notification-preferences-form')?.addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const preferences = {
+        blockchain_events: document.getElementById('blockchain-events').checked,
+        certificate_updates: document.getElementById('certificate-updates').checked,
+        marketplace_activity: document.getElementById('marketplace-activity').checked,
+        system_alerts: document.getElementById('system-alerts').checked
+    };
+    
+    // Save preferences (implementation would call backend)
+    console.log('Saving preferences:', preferences);
+    
+    showToast('Preferences Saved', 'Your notification preferences have been updated', 'success');
+});
+
+function showToast(title, message, type) {
+    const toast = document.createElement('div');
+    toast.className = `alert alert-${type} position-fixed top-0 end-0 m-3`;
+    toast.style.zIndex = '1060';
+    toast.innerHTML = `
+        <strong>${title}</strong><br>
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        if (toast.parentNode) {
+            toast.parentNode.removeChild(toast);
+        }
+    }, 5000);
+}
+</script>
+{% endblock %}

@@ -1,7 +1,8 @@
+from datetime import datetime
 from flask_socketio import emit, join_room, leave_room
 from flask_login import current_user
 from app import socketio
-from models import User
+from models import User, Block
 from blockchain import BlockchainSimulator
 from marketplace import CarbonCreditMarketplace
 from analytics import AnalyticsManager
@@ -17,7 +18,7 @@ def handle_connect():
         emit('connected', {
             'user_id': current_user.id,
             'username': current_user.username,
-            'timestamp': str(current_user.created_at)
+            'timestamp': current_user.created_at.isoformat()
         })
         
         print(f"User {current_user.username} connected to WebSocket")
@@ -122,8 +123,6 @@ def handle_blockchain_visualization():
     if not current_user.is_authenticated:
         return
     
-    from models import Block
-    
     # Get recent blocks for visualization
     recent_blocks = Block.query.order_by(Block.index.desc()).limit(20).all()
     
@@ -163,7 +162,7 @@ def handle_mining_simulation():
         'type': 'demo_transaction',
         'user_id': current_user.id,
         'message': 'Demo mining simulation',
-        'timestamp': BlockchainSimulator.calculate_hash(0, "0", str(current_user.id), [], 0)[:16]
+        'timestamp': datetime.utcnow().isoformat()
     }]
     
     # Mine the block (this will emit real-time updates automatically)
@@ -178,7 +177,7 @@ def handle_mining_simulation():
 @socketio.on('ping')
 def handle_ping():
     """Handle ping for connection testing"""
-    emit('pong', {'timestamp': str(current_user.created_at) if current_user.is_authenticated else 'anonymous'})
+    emit('pong', {'timestamp': current_user.created_at.isoformat() if current_user.is_authenticated else 'anonymous'})
 
 # Error handling for WebSocket events
 @socketio.on_error_default

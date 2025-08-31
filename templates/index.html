@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <!-- Hero Section -->
+    <div class="col-12">
+        <div class="jumbotron bg-gradient p-5 rounded mb-4">
+            <div class="container text-center">
+                <h1 class="display-4">
+                    <i class="fas fa-leaf text-success me-3"></i>
+                    Green Hydrogen Platform
+                </h1>
+                <p class="lead">Blockchain-based certification and carbon credit trading for green hydrogen production</p>
+                {% if not current_user.is_authenticated %}
+                <div class="mt-4">
+                    <a class="btn btn-success btn-lg me-3" href="{{ url_for('signup') }}">Get Started</a>
+                    <a class="btn btn-outline-light btn-lg" href="{{ url_for('login') }}">Login</a>
+                </div>
+                {% else %}
+                <div class="mt-4">
+                    <a class="btn btn-success btn-lg" href="{{ url_for('dashboard') }}">Go to Dashboard</a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Platform Statistics -->
+    <div class="col-md-3 mb-4">
+        <div class="card">
+            <div class="card-body text-center">
+                <i class="fas fa-users fa-3x text-primary mb-3"></i>
+                <h3>{{ platform_stats.users.total }}</h3>
+                <p class="text-muted">Total Users</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="card">
+            <div class="card-body text-center">
+                <i class="fas fa-certificate fa-3x text-success mb-3"></i>
+                <h3>{{ platform_stats.certificates.total }}</h3>
+                <p class="text-muted">Certificates Issued</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="card">
+            <div class="card-body text-center">
+                <i class="fas fa-cubes fa-3x text-info mb-3"></i>
+                <h3>{{ blockchain_stats.total_blocks }}</h3>
+                <p class="text-muted">Blockchain Blocks</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="card">
+            <div class="card-body text-center">
+                <i class="fas fa-coins fa-3x text-warning mb-3"></i>
+                <h3>{{ platform_stats.credits.total }}</h3>
+                <p class="text-muted">Carbon Credits</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Features -->
+    <div class="col-md-4 mb-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="text-center mb-3">
+                    <i class="fas fa-certificate fa-3x text-success"></i>
+                </div>
+                <h5 class="card-title">Digital Certificates</h5>
+                <p class="card-text">Issue and verify digital certificates for green hydrogen production with blockchain security.</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4 mb-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="text-center mb-3">
+                    <i class="fas fa-exchange-alt fa-3x text-primary"></i>
+                </div>
+                <h5 class="card-title">Carbon Credit Trading</h5>
+                <p class="card-text">Trade carbon credits in a transparent marketplace with real-time order matching.</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4 mb-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="text-center mb-3">
+                    <i class="fas fa-cubes fa-3x text-info"></i>
+                </div>
+                <h5 class="card-title">Blockchain Security</h5>
+                <p class="card-text">All transactions are secured on our blockchain with proof-of-work consensus mechanism.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if current_user.is_authenticated %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-chart-line me-2"></i>Platform Activity</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Marketplace Activity</h6>
+                        <p>Volume (24h): ${{ "%.2f"|format(platform_stats.marketplace.total_volume) }}</p>
+                        <p>Active Orders: {{ platform_stats.marketplace.active_orders }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Blockchain Status</h6>
+                        <p>Latest Block: #{{ blockchain_stats.latest_block.index if blockchain_stats.latest_block else 0 }}</p>
+                        <p>Status: <span class="badge bg-success">{{ "Valid" if blockchain_stats.is_valid else "Invalid" }}</span></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

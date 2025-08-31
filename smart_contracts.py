@@ -14,11 +14,10 @@ class SmartContractManager:
         address = f"0x{secrets.token_hex(20)}"
         code_hash = hashlib.sha256(json.dumps(deployment_data).encode()).hexdigest()
         
-        contract = SmartContract(
-            address=address,
-            contract_type=contract_type,
-            code_hash=code_hash
-        )
+        contract = SmartContract()
+        contract.address = address
+        contract.contract_type = contract_type
+        contract.code_hash = code_hash
         
         meta_data = {
             'deployer': deployer_address or f"deployer_{secrets.token_hex(4)}",

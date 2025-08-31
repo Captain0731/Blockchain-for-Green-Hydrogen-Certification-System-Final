@@ -1,0 +1,428 @@
+{% extends "base.html" %}
+
+{% block title %}Carbon Credit Marketplace - Green Hydrogen Platform{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2><i class="fas fa-store me-2"></i>Carbon Credit Marketplace</h2>
+        <p class="text-muted">Trade carbon credits with other platform users</p>
+    </div>
+</div>
+
+<!-- Market Stats -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body text-center">
+                <i class="fas fa-dollar-sign fa-2x mb-2"></i>
+                <h5>${{ "%.2f"|format(market_stats.total_volume) }}</h5>
+                <p class="mb-0">Total Volume</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body text-center">
+                <i class="fas fa-chart-line fa-2x mb-2"></i>
+                <h5>${{ "%.2f"|format(market_stats.average_price) }}</h5>
+                <p class="mb-0">Avg Price</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body text-center">
+                <i class="fas fa-percentage fa-2x mb-2"></i>
+                <h5>{{ "%.1f"|format(market_stats.price_change_24h) }}%</h5>
+                <p class="mb-0">24h Change</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card bg-warning text-dark">
+            <div class="card-body text-center">
+                <i class="fas fa-list fa-2x mb-2"></i>
+                <h5>{{ market_stats.active_orders }}</h5>
+                <p class="mb-0">Active Orders</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Trading Interface -->
+<div class="row mb-4">
+    <!-- Create Order -->
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-plus me-2"></i>Create Order</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="mb-3">
+                        <label class="form-label">Order Type</label>
+                        <div class="btn-group w-100" role="group">
+                            <input type="radio" class="btn-check" name="order_type" id="buy_order" value="buy" checked>
+                            <label class="btn btn-outline-success" for="buy_order">
+                                <i class="fas fa-arrow-up me-1"></i>Buy
+                            </label>
+                            
+                            <input type="radio" class="btn-check" name="order_type" id="sell_order" value="sell">
+                            <label class="btn btn-outline-danger" for="sell_order">
+                                <i class="fas fa-arrow-down me-1"></i>Sell
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="amount" class="form-label">Amount (Credits)</label>
+                        <input type="number" class="form-control" id="amount" name="amount" 
+                               step="0.01" min="0.01" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="price" class="form-label">Price per Credit ($)</label>
+                        <input type="number" class="form-control" id="price" name="price" 
+                               step="0.01" min="0.01" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="form-text">
+                            <strong>Total Value:</strong> <span id="total-value">$0.00</span>
+                        </div>
+                        <div class="form-text">
+                            <strong>Your Balance:</strong> {{ "%.2f"|format(user_balance) }} credits
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary w-100" id="order-submit">
+                        <i class="fas fa-handshake me-2"></i>Place Order
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Order Book -->
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-book me-2"></i>Order Book</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <!-- Buy Orders -->
+                    <div class="col-md-6">
+                        <h6 class="text-success">Buy Orders</h6>
+                        <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Price</th>
+                                        <th>Amount</th>
+                                        <th>Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for order in orderbook.buy_orders %}
+                                    <tr class="text-success">
+                                        <td>${{ "%.2f"|format(order.price_per_credit) }}</td>
+                                        <td>{{ "%.2f"|format(order.amount) }}</td>
+                                        <td>${{ "%.2f"|format(order.total_value) }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                    {% if not orderbook.buy_orders %}
+                                    <tr>
+                                        <td colspan="3" class="text-center text-muted">No buy orders</td>
+                                    </tr>
+                                    {% endif %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Sell Orders -->
+                    <div class="col-md-6">
+                        <h6 class="text-danger">Sell Orders</h6>
+                        <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Price</th>
+                                        <th>Amount</th>
+                                        <th>Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for order in orderbook.sell_orders %}
+                                    <tr class="text-danger">
+                                        <td>${{ "%.2f"|format(order.price_per_credit) }}</td>
+                                        <td>{{ "%.2f"|format(order.amount) }}</td>
+                                        <td>${{ "%.2f"|format(order.total_value) }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                    {% if not orderbook.sell_orders %}
+                                    <tr>
+                                        <td colspan="3" class="text-center text-muted">No sell orders</td>
+                                    </tr>
+                                    {% endif %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Your Orders -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-list-ul me-2"></i>Your Active Orders</h5>
+            </div>
+            <div class="card-body">
+                {% if user_orders %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Type</th>
+                                    <th>Amount</th>
+                                    <th>Price</th>
+                                    <th>Total Value</th>
+                                    <th>Status</th>
+                                    <th>Created</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for order in user_orders %}
+                                {% if order.status == 'active' %}
+                                <tr>
+                                    <td>
+                                        <span class="badge bg-{{ 'success' if order.order_type == 'buy' else 'danger' }}">
+                                            {{ order.order_type.upper() }}
+                                        </span>
+                                    </td>
+                                    <td>{{ "%.2f"|format(order.amount) }}</td>
+                                    <td>${{ "%.2f"|format(order.price_per_credit) }}</td>
+                                    <td>${{ "%.2f"|format(order.amount * order.price_per_credit) }}</td>
+                                    <td>
+                                        <span class="badge bg-primary">{{ order.status.title() }}</span>
+                                    </td>
+                                    <td>{{ order.created_at.strftime('%m/%d %H:%M') }}</td>
+                                    <td>
+                                        <a href="{{ url_for('cancel_order', order_id=order.id) }}" 
+                                           class="btn btn-sm btn-outline-danger"
+                                           onclick="return confirm('Cancel this order?')">
+                                            <i class="fas fa-times"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endif %}
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-3">
+                        <p class="text-muted">No active orders</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Transactions -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5><i class="fas fa-history me-2"></i>Your Trade History</h5>
+                <a href="{{ url_for('export_trades') }}" class="btn btn-outline-primary btn-sm">
+                    <i class="fas fa-download me-1"></i>Export
+                </a>
+            </div>
+            <div class="card-body">
+                {% if user_transactions %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Type</th>
+                                    <th>Amount</th>
+                                    <th>Price</th>
+                                    <th>Total</th>
+                                    <th>Counterparty</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for tx in user_transactions %}
+                                <tr>
+                                    <td>{{ tx.executed_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                                    <td>
+                                        <span class="badge bg-{{ 'success' if tx.buyer_id == current_user.id else 'danger' }}">
+                                            {{ 'BUY' if tx.buyer_id == current_user.id else 'SELL' }}
+                                        </span>
+                                    </td>
+                                    <td>{{ "%.2f"|format(tx.amount) }}</td>
+                                    <td>${{ "%.2f"|format(tx.price_per_credit) }}</td>
+                                    <td>${{ "%.2f"|format(tx.total_price) }}</td>
+                                    <td>
+                                        {% if tx.buyer_id == current_user.id %}
+                                            {{ tx.seller.username }}
+                                        {% else %}
+                                            {{ tx.buyer.username }}
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-handshake fa-3x text-muted mb-3"></i>
+                        <h5>No trades yet</h5>
+                        <p class="text-muted">Start trading to build your transaction history</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Real-time market updates
+if (typeof io !== 'undefined') {
+    const socket = io();
+    
+    socket.on('connect', function() {
+        socket.emit('join_marketplace_room');
+    });
+    
+    socket.on('orderbook_update', function(data) {
+        updateOrderBook(data);
+    });
+    
+    socket.on('trade_executed', function(data) {
+        showToast('Trade Executed', `${data.amount} credits traded at $${data.price}`, 'success');
+        
+        // Refresh if user was involved
+        if (data.buyer_id === {{ current_user.id }} || data.seller_id === {{ current_user.id }}) {
+            setTimeout(() => location.reload(), 1000);
+        }
+    });
+    
+    socket.on('market_stats', function(data) {
+        updateMarketStats(data);
+    });
+}
+
+// Calculate total value
+function updateTotalValue() {
+    const amount = parseFloat(document.getElementById('amount').value) || 0;
+    const price = parseFloat(document.getElementById('price').value) || 0;
+    const total = amount * price;
+    document.getElementById('total-value').textContent = `$${total.toFixed(2)}`;
+}
+
+document.getElementById('amount').addEventListener('input', updateTotalValue);
+document.getElementById('price').addEventListener('input', updateTotalValue);
+
+// Validate sell orders
+document.getElementById('sell_order').addEventListener('change', function() {
+    if (this.checked) {
+        const amountInput = document.getElementById('amount');
+        const userBalance = {{ user_balance }};
+        amountInput.max = userBalance;
+        
+        amountInput.addEventListener('input', function() {
+            const submitButton = document.getElementById('order-submit');
+            if (parseFloat(this.value) > userBalance) {
+                this.setCustomValidity(`Cannot sell more than ${userBalance} credits`);
+                submitButton.disabled = true;
+            } else {
+                this.setCustomValidity('');
+                submitButton.disabled = false;
+            }
+        });
+    }
+});
+
+document.getElementById('buy_order').addEventListener('change', function() {
+    if (this.checked) {
+        const amountInput = document.getElementById('amount');
+        amountInput.removeAttribute('max');
+        amountInput.setCustomValidity('');
+        document.getElementById('order-submit').disabled = false;
+    }
+});
+
+function updateOrderBook(orderbook) {
+    // Update buy orders
+    const buyOrdersBody = document.querySelector('.text-success').closest('table').querySelector('tbody');
+    updateOrderTable(buyOrdersBody, orderbook.buy_orders, 'text-success');
+    
+    // Update sell orders
+    const sellOrdersBody = document.querySelector('.text-danger').closest('table').querySelector('tbody');
+    updateOrderTable(sellOrdersBody, orderbook.sell_orders, 'text-danger');
+}
+
+function updateOrderTable(tbody, orders, className) {
+    let html = '';
+    
+    if (orders.length === 0) {
+        html = `<tr><td colspan="3" class="text-center text-muted">No orders</td></tr>`;
+    } else {
+        orders.forEach(order => {
+            html += `
+                <tr class="${className}">
+                    <td>$${order.price_per_credit.toFixed(2)}</td>
+                    <td>${order.amount.toFixed(2)}</td>
+                    <td>$${order.total_value.toFixed(2)}</td>
+                </tr>
+            `;
+        });
+    }
+    
+    tbody.innerHTML = html;
+}
+
+function updateMarketStats(stats) {
+    // Update market stats cards if needed
+}
+
+function showToast(title, message, type) {
+    const toast = document.createElement('div');
+    toast.className = `alert alert-${type} position-fixed top-0 end-0 m-3`;
+    toast.style.zIndex = '1060';
+    toast.innerHTML = `
+        <strong>${title}</strong><br>
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        if (toast.parentNode) {
+            toast.parentNode.removeChild(toast);
+        }
+    }, 5000);
+}
+
+// Initialize total value calculation
+updateTotalValue();
+</script>
+{% endblock %}

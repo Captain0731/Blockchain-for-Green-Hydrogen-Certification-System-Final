@@ -2,7 +2,7 @@
 
 ## Overview
 
-A blockchain-based certification and carbon credit trading platform for green hydrogen production. The system enables users to issue digital certificates for hydrogen production, manage carbon credits through a real-time marketplace, and track all transactions on a simulated blockchain network. The platform combines environmental sustainability tracking with financial trading mechanisms, providing transparency and accountability in the green energy sector.
+A blockchain-based certification and carbon credit trading platform for green hydrogen production. The system enables users to issue digital certificates for hydrogen production, manage carbon credits, and trade them in a real-time marketplace. Built with Python Flask and featuring a simulated blockchain for transaction immutability, the platform combines environmental sustainability tracking with decentralized verification mechanisms.
 
 ## User Preferences
 
@@ -48,12 +48,16 @@ Preferred communication style: Simple, everyday language.
 
 ### Frontend Libraries
 - **Bootstrap 5**: CSS framework providing responsive grid system, component library, and utility classes
-- **Font Awesome**: Comprehensive icon library for consistent UI iconography across all platform features
-- **Three.js**: WebGL-based 3D graphics engine for blockchain visualization and interactive dashboard elements
-- **Chart.js**: Canvas-based charting library for market data visualization and analytics dashboards
+- **Font Awesome**: Icon library for consistent UI elements and visual indicators
+- **Chart.js**: JavaScript charting library for market data visualization and analytics dashboards
+- **Three.js**: 3D graphics library for blockchain visualization and interactive explorer components
 - **Socket.IO Client**: JavaScript WebSocket client for real-time data synchronization
 
-### Development Tools
-- **Python Standard Library**: Hashlib for cryptographic operations, JSON for data serialization, datetime for timestamp management
-- **SQLite**: Default development database with configuration for PostgreSQL production deployment
-- **CSS Custom Properties**: Native browser support for theme management and dynamic styling
+### Database and Storage
+- **SQLite**: Development database with automatic table creation and migration support
+- **PostgreSQL**: Production database target with connection pooling and performance optimization
+- **JSON Metadata**: Flexible schema storage for certificate details, contract parameters, and user preferences
+
+### Security and Hashing
+- **hashlib**: Python cryptographic hashing for blockchain integrity and smart contract verification
+- **secrets**: Secure random number generation for addresses, tokens, and cryptographic operations

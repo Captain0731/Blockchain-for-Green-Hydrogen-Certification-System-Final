@@ -3,7 +3,7 @@ import logging
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
-# from flask_socketio import SocketIO
+from flask_socketio import SocketIO
 from sqlalchemy.orm import DeclarativeBase
 from werkzeug.middleware.proxy_fix import ProxyFix
 
@@ -21,30 +21,47 @@ app.secret_key = os.environ.get("SESSION_SECRET", "dev-secret-key-change-in-prod
 app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 
 # Configure the database
-app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL", "sqlite:///hydrogen_platform.db")
+database_url = os.environ.get("DATABASE_URL", "sqlite:///hydrogen_platform.db")
+app.config["SQLALCHEMY_DATABASE_URI"] = database_url
 app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
     "pool_recycle": 300,
     "pool_pre_ping": True,
 }
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 # Initialize extensions
 db.init_app(app)
-# socketio = SocketIO(app, cors_allowed_origins="*")
 
+# Initialize Flask-Login
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
 login_manager.login_message = 'Please log in to access this page.'
+login_manager.login_message_category = 'info'
+
+# Initialize SocketIO
+socketio = SocketIO(app, cors_allowed_origins="*", logger=True, engineio_logger=True)
 
 @login_manager.user_loader
 def load_user(user_id):
     from models import User
     return User.query.get(int(user_id))
 
+# Create tables and initialize data
 with app.app_context():
-    # Import models to ensure tables are created
+    # Import models to ensure they're registered
     import models
+    
+    # Create all tables
     db.create_all()
     
-    # Import and register routes
-    import routes
+    # Initialize system contracts
+    try:
+        from smart_contracts import SmartContractManager
+        SmartContractManager.auto_deploy_system_contracts()
+    except Exception as e:
+        print(f"Warning: Could not auto-deploy system contracts: {e}")
+
+# Import routes after app initialization
+import routes
+import websocket_events

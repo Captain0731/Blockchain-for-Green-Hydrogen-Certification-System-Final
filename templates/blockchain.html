@@ -1,0 +1,424 @@
+{% extends "base.html" %}
+
+{% block title %}Blockchain Explorer - Green Hydrogen Platform{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2><i class="fas fa-cubes me-2"></i>Blockchain Explorer</h2>
+        <p class="text-muted">Explore the blockchain powering our green hydrogen platform</p>
+    </div>
+</div>
+
+<!-- Blockchain Status -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-{{ 'success' if is_valid else 'danger' }} text-white">
+            <div class="card-body text-center">
+                <i class="fas fa-{{ 'shield-alt' if is_valid else 'exclamation-triangle' }} fa-2x mb-2"></i>
+                <h5>{{ 'Valid' if is_valid else 'Invalid' }}</h5>
+                <p class="mb-0">Chain Status</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body text-center">
+                <i class="fas fa-cubes fa-2x mb-2"></i>
+                <h5>{{ blockchain_stats.total_blocks }}</h5>
+                <p class="mb-0">Total Blocks</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body text-center">
+                <i class="fas fa-list fa-2x mb-2"></i>
+                <h5>{{ blockchain_stats.total_transactions }}</h5>
+                <p class="mb-0">Total Transactions</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-body text-center">
+                <button id="mine-demo-block" class="btn btn-warning">
+                    <i class="fas fa-hammer me-2"></i>Mine Demo Block
+                </button>
+                <p class="mt-2 mb-0 small text-muted">Test blockchain mining</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 3D Blockchain Visualization -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5><i class="fas fa-eye me-2"></i>3D Blockchain Visualization</h5>
+                <div class="btn-group" role="group">
+                    <button id="load-visualization" class="btn btn-primary btn-sm">
+                        <i class="fas fa-play me-1"></i>Load Visualization
+                    </button>
+                    <button id="reset-view" class="btn btn-secondary btn-sm">
+                        <i class="fas fa-refresh me-1"></i>Reset View
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div id="blockchain-visualization" style="height: 400px; background: #1a1a1a; border-radius: 0.375rem;">
+                    <div class="d-flex align-items-center justify-content-center h-100">
+                        <div class="text-center">
+                            <i class="fas fa-cubes fa-3x text-muted mb-3"></i>
+                            <h5>3D Blockchain Visualization</h5>
+                            <p class="text-muted">Click "Load Visualization" to explore the blockchain in 3D</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Blocks -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-list me-2"></i>Recent Blocks</h5>
+            </div>
+            <div class="card-body">
+                {% if blocks %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Block #</th>
+                                    <th>Hash</th>
+                                    <th>Previous Hash</th>
+                                    <th>Timestamp</th>
+                                    <th>Transactions</th>
+                                    <th>Difficulty</th>
+                                    <th>Nonce</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for block in blocks %}
+                                <tr class="block-row" data-block-index="{{ block.index }}">
+                                    <td>
+                                        <strong>#{{ block.index }}</strong>
+                                        {% if loop.first %}
+                                        <span class="badge bg-success ms-1">Latest</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <code class="text-info">{{ block.hash[:16] }}...</code>
+                                        <button class="btn btn-sm btn-link p-0 ms-1" 
+                                                onclick="copyToClipboard('{{ block.hash }}')"
+                                                title="Copy full hash">
+                                            <i class="fas fa-copy"></i>
+                                        </button>
+                                    </td>
+                                    <td>
+                                        <code class="text-muted">{{ block.previous_hash[:16] }}...</code>
+                                    </td>
+                                    <td>{{ block.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                                    <td>
+                                        <span class="badge bg-primary">{{ block.get_transactions()|length }}</span>
+                                        {% if block.get_transactions()|length > 0 %}
+                                        <button class="btn btn-sm btn-outline-info ms-1" 
+                                                onclick="showTransactions({{ block.index }})"
+                                                title="View transactions">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ block.difficulty }}</td>
+                                    <td>{{ block.nonce }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-cubes fa-3x text-muted mb-3"></i>
+                        <h5>No blocks found</h5>
+                        <p class="text-muted">The blockchain is empty. Mine the genesis block to get started.</p>
+                        <button id="init-blockchain" class="btn btn-primary">
+                            <i class="fas fa-play me-2"></i>Initialize Blockchain
+                        </button>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Transaction Details Modal -->
+<div class="modal fade" id="transactionModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Block Transactions</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="transaction-details">
+                    <div class="text-center">
+                        <i class="fas fa-spinner fa-spin fa-2x"></i>
+                        <p class="mt-2">Loading transactions...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let scene, camera, renderer;
+let blockchainVisualization = null;
+
+// WebSocket connection for real-time updates
+if (typeof io !== 'undefined') {
+    const socket = io();
+    
+    socket.on('connect', function() {
+        socket.emit('join_blockchain_room');
+    });
+    
+    socket.on('new_block', function(data) {
+        console.log('New block mined:', data);
+        showToast('New Block Mined', `Block #${data.index} has been added to the blockchain`, 'success');
+        
+        // Refresh the page to show the new block
+        setTimeout(() => {
+            location.reload();
+        }, 2000);
+    });
+    
+    socket.on('mining_complete', function(data) {
+        showToast('Mining Complete', data.message, 'success');
+    });
+}
+
+// Mine demo block
+document.getElementById('mine-demo-block').addEventListener('click', function() {
+    const button = this;
+    button.disabled = true;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Mining...';
+    
+    if (typeof io !== 'undefined') {
+        io().emit('simulate_mining');
+    }
+    
+    setTimeout(() => {
+        button.disabled = false;
+        button.innerHTML = '<i class="fas fa-hammer me-2"></i>Mine Demo Block';
+    }, 3000);
+});
+
+// Initialize 3D visualization
+document.getElementById('load-visualization').addEventListener('click', function() {
+    initBlockchainVisualization();
+    if (typeof io !== 'undefined') {
+        io().emit('request_blockchain_visualization');
+    }
+});
+
+// Reset visualization view
+document.getElementById('reset-view').addEventListener('click', function() {
+    if (camera && renderer) {
+        camera.position.set(10, 10, 10);
+        camera.lookAt(0, 0, 0);
+        renderer.render(scene, camera);
+    }
+});
+
+function initBlockchainVisualization() {
+    const container = document.getElementById('blockchain-visualization');
+    container.innerHTML = ''; // Clear previous content
+    
+    // Scene setup
+    scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x1a1a1a);
+    
+    // Camera setup
+    camera = new THREE.PerspectiveCamera(75, container.offsetWidth / container.offsetHeight, 0.1, 1000);
+    camera.position.set(10, 10, 10);
+    
+    // Renderer setup
+    renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(container.offsetWidth, container.offsetHeight);
+    container.appendChild(renderer.domElement);
+    
+    // Lighting
+    const ambientLight = new THREE.AmbientLight(0x404040, 0.4);
+    scene.add(ambientLight);
+    
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    directionalLight.position.set(10, 10, 5);
+    scene.add(directionalLight);
+    
+    // Controls (basic mouse interaction)
+    let mouseDown = false;
+    let mouseX = 0, mouseY = 0;
+    
+    renderer.domElement.addEventListener('mousedown', function(event) {
+        mouseDown = true;
+        mouseX = event.clientX;
+        mouseY = event.clientY;
+    });
+    
+    renderer.domElement.addEventListener('mouseup', function() {
+        mouseDown = false;
+    });
+    
+    renderer.domElement.addEventListener('mousemove', function(event) {
+        if (!mouseDown) return;
+        
+        const deltaX = event.clientX - mouseX;
+        const deltaY = event.clientY - mouseY;
+        
+        camera.position.x += deltaX * 0.01;
+        camera.position.y -= deltaY * 0.01;
+        camera.lookAt(0, 0, 0);
+        
+        mouseX = event.clientX;
+        mouseY = event.clientY;
+        
+        renderer.render(scene, camera);
+    });
+    
+    // Render initial scene
+    renderer.render(scene, camera);
+    
+    console.log('3D visualization initialized');
+}
+
+// Handle blockchain visualization data
+if (typeof io !== 'undefined') {
+    io().on('blockchain_visualization_data', function(data) {
+        if (!scene) return;
+        
+        // Clear existing blocks
+        const blocksToRemove = [];
+        scene.traverse(function(object) {
+            if (object.userData.isBlock) {
+                blocksToRemove.push(object);
+            }
+        });
+        blocksToRemove.forEach(block => scene.remove(block));
+        
+        // Add blocks
+        data.blocks.forEach(function(blockData, index) {
+            const geometry = new THREE.BoxGeometry(1, 1, 1);
+            const material = new THREE.MeshPhongMaterial({ 
+                color: index === 0 ? 0x00ff00 : 0x0066cc 
+            });
+            const cube = new THREE.Mesh(geometry, material);
+            
+            cube.position.set(blockData.position.x, blockData.position.y, blockData.position.z);
+            cube.userData.isBlock = true;
+            cube.userData.blockData = blockData;
+            
+            scene.add(cube);
+        });
+        
+        // Add connections (lines between blocks)
+        data.connections.forEach(function(connection) {
+            // Find blocks by hash
+            const blocks = scene.children.filter(child => child.userData.isBlock);
+            // Implementation would connect blocks with lines
+        });
+        
+        camera.lookAt(0, 0, 0);
+        renderer.render(scene, camera);
+    });
+}
+
+// Show transactions for a block
+function showTransactions(blockIndex) {
+    const modal = new bootstrap.Modal(document.getElementById('transactionModal'));
+    const detailsContainer = document.getElementById('transaction-details');
+    
+    // Find block data
+    const blockRow = document.querySelector(`[data-block-index="${blockIndex}"]`);
+    
+    fetch(`/api/blocks`)
+        .then(response => response.json())
+        .then(blocks => {
+            const block = blocks.find(b => b.index === blockIndex);
+            if (block && block.transactions) {
+                let html = '<div class="list-group">';
+                block.transactions.forEach((tx, index) => {
+                    html += `
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between">
+                                <h6 class="mb-1">Transaction #${index + 1}</h6>
+                                <small class="text-muted">${tx.type || 'Unknown'}</small>
+                            </div>
+                            <p class="mb-1">${tx.message || 'No description'}</p>
+                            <small class="text-muted">
+                                ${tx.timestamp ? new Date(tx.timestamp).toLocaleString() : 'No timestamp'}
+                            </small>
+                        </div>
+                    `;
+                });
+                html += '</div>';
+                detailsContainer.innerHTML = html;
+            } else {
+                detailsContainer.innerHTML = '<p class="text-center text-muted">No transactions found in this block</p>';
+            }
+        })
+        .catch(error => {
+            detailsContainer.innerHTML = '<p class="text-center text-danger">Error loading transactions</p>';
+        });
+    
+    modal.show();
+}
+
+// Copy to clipboard
+function copyToClipboard(text) {
+    navigator.clipboard.writeText(text).then(function() {
+        showToast('Copied', 'Hash copied to clipboard', 'success');
+    });
+}
+
+// Initialize blockchain if needed
+document.getElementById('init-blockchain')?.addEventListener('click', function() {
+    fetch('/api/init-blockchain', { method: 'POST' })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showToast('Success', 'Blockchain initialized', 'success');
+                location.reload();
+            }
+        });
+});
+
+function showToast(title, message, type) {
+    const toast = document.createElement('div');
+    toast.className = `alert alert-${type} position-fixed top-0 end-0 m-3`;
+    toast.style.zIndex = '1060';
+    toast.innerHTML = `
+        <strong>${title}</strong><br>
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        if (toast.parentNode) {
+            toast.parentNode.removeChild(toast);
+        }
+    }, 5000);
+}
+</script>
+{% endblock %}
